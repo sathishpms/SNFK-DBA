@@ -1,0 +1,40 @@
+name: workflow_to_deploy_in_snowflake
+
+on:
+  push:
+    branches:
+      - development
+    paths:
+      - 'migrations/**'
+
+  workflow_dispatch:
+  
+jobs:
+  deploy-snowflake-changes-jobs:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: checkout-repository
+        uses: actions/checkout@v2
+        
+      - name: use pythin 3.8.x
+        uses: actions/setup-python@v2.2.1
+        with:
+          python-version: 3.8.x
+          
+      - name: run schemachange
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SF_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SF_USERNAME }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SF_PASSWORD }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SF_DATABASE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SF_WAREHOUSE }}
+          SNOWFLAKE_ROLE: ${{ secrets.SF_ROLE }}
+        run: |
+          echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+          python --version
+          echo "step 1: Installing schemachange"
+          pip install schemachange
+          echo "step 2: Running schemachange"
+          
+          schemachange -f $GITHUB_WORKSPACE/migrations -a $SNOWFLAKE_ACCOUNT -u $SNOWFLAKE_USER -r $SNOWFLAKE_ROLE -w $SNOWFLAKE_WAREHOUSE -d $SNOWFLAKE_DATABASE -c $SNOWFLAKE_DATABASE.SCHEMACHANGE.CHANGE_HISTORY --create-change-history-table
